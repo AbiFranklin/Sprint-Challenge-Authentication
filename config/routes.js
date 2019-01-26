@@ -1,4 +1,10 @@
 const axios = require('axios');
+const bcrypt = require('bcryptjs');
+const knex = require('knex');
+
+const knexConfig = require('../knexfile.js');
+
+const db = knex(knexConfig.development);
 
 const { authenticate } = require('../auth/authenticate');
 
@@ -9,7 +15,15 @@ module.exports = server => {
 };
 
 function register(req, res) {
-  // implement user registration
+  const user = req.body;
+  user.password = bcrypt.hashSync(user.password, 10);
+  db('users').insert(user)
+  .then(user => {
+      res.status(201).send('Successfully Registered!')
+  })
+  .catch(err => {
+    res.status(500).send(err);
+  })
 }
 
 function login(req, res) {
