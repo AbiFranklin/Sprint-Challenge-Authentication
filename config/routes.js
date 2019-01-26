@@ -27,7 +27,18 @@ function register(req, res) {
 }
 
 function login(req, res) {
-  // implement user login
+  const creds = req.body;
+  db('users').where('username', creds.username).first()
+  .then(user => {
+  if (user && bcrypt.compareSync(creds.password, user.password)) {
+    res.status(201).send('Successfully Logged In!')
+  } else {
+    res.status(404).send('Error - Authentication');
+  }
+})
+.catch(err => {
+  res.status(500).send('Error - Loookup');
+});
 }
 
 function getJokes(req, res) {
