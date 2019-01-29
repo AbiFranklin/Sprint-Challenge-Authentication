@@ -1,5 +1,3 @@
-require('dotenv').config(); // load .env variables
-const port = process.env.PORT || 3300;
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -11,15 +9,12 @@ const db_config = require('./knexfile');
 
 const db = knex(db_config.development);
 
-const helmet = require('helmet');
+const dbHelpers = require('./data/dbHelpers.js');
+
 const server = express();
+const PORT = 3300;
 
-server.use(helmet());
-server.use(cors());
-server.use(express.json());
-
-
-const secret = 'secret';
+const secret = 'secretsecret';
 
 server.use(express.json());
 server.use(cors());
@@ -40,11 +35,11 @@ function generateToken(username) {
 }
 
 function protected(req, res, next) {
-  const token = req.headers.authorization;
-  if(token) {
+    const token = req.headers.authorization;
+    if(token) {
     jwt.verify(token, secret, (err, decodeToken) => {
         if (err) {
-            res.status(401).json({ message: err })
+            res.status(401).json({ message: 'Invalid token' })
         } else {
             next();
         }
@@ -76,7 +71,7 @@ server.post('/api/register', (req,res) => {
     .catch(err => res.status(500).send(err));
   });
   
-server.post('/api/login', (req, res) => {
+  server.post('/api/login', (req, res) => {
     const creds = req.body;
     db('users').where( { username: creds.username }).first()
     .then(user => {
@@ -91,20 +86,20 @@ server.post('/api/login', (req, res) => {
   });
 
   server.get('/api/jokes', protected, (req, res) => {
-  const requestOptions = {
-    headers: { accept: 'application/json' },
-  };
+    const requestOptions = {
+        headers: { accept: 'application/json' },
+      };
+    
+      axios
+        .get('https://icanhazdadjoke.com/search', requestOptions)
+        .then(response => {
+          res.status(200).json({ results: response.data.results })
+        })
+        .catch(err => {
+          res.status(500).json({ message: 'Error Fetching Jokes', error: err });
+        });
+  });
 
-  axios
-    .get('https://icanhazdadjoke.com/search', requestOptions)
-    .then(response => {
-      res.status(200).json({ results: response.data.results })
-    })
-    .catch(err => {
-      res.status(500).json({ message: 'Error Fetching Jokes', error: err });
-    });
-});
-
-server.listen(port, () => {
-  console.log(`\n=== Server listening on port ${port}\n`);
+server.listen(PORT, () => {
+  console.log(`listening on port ${PORT}`);
 });
